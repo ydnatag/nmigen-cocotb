@@ -47,7 +47,7 @@ def cocotb_parser():
         help="write execution trace to VCD-FILE")
     p_cocotb.add_argument("--clean",
         action="store_true", default=False,
-        help="write execution trace to VCD-FILE")
+        help="clean generated files after simulation")
     return parser
 
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
@@ -63,12 +63,11 @@ def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
                     f.write(verilog_waveforms.format(args.vcd_file, name))
             generate_makefile(verilog_file, name, args.module, args.vcd_file)
             subprocess.run('make', shell=True)
-            if args.clean:
-                os.remove('Makefile')
-                shutil.rmtree('build')
-                shutil.rmtree('sim_build')
-                shutil.rmtree('__pycache__')
-     
+        if args.clean:
+            os.remove('Makefile')
+            shutil.rmtree('build')
+            shutil.rmtree('sim_build')
+            shutil.rmtree('__pycache__')
 
 def generate_makefile(verilog, top, module, waveform=False):
     makefile = makefile_template.format(verilog, top, module)
