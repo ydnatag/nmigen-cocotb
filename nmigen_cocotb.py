@@ -1,4 +1,5 @@
 import argparse
+from cocotb_test.run import run as cocotb_run
 from nmigen import Fragment
 from nmigen.back import verilog
 from nmigen.cli import main_parser, main_runner
@@ -7,25 +8,12 @@ import tempfile
 import os
 import shutil
 
-makefile_template = """\
-VERILOG_SOURCES = {}
-SIM = icarus
-TOPLEVEL = {}
-MODULE = {}
-"""
 
-makefile_includes = """
-COCOTB = $(shell cocotb-config --makefiles)
-include $(COCOTB)/Makefile.inc
-include $(COCOTB)/Makefile.sim
-"""
-
-makefile_waveforms = """
-COMPILE_ARGS += -s waveform_module
-"""
+compile_args_waveforms = ['-s', 'cocotb_waveform_module']
 
 verilog_waveforms = """
-module waveform_module;
+
+module cocotb_waveform_module;
    initial begin
       $dumpfile ("{}");
       $dumpvars (0, {});
@@ -33,6 +21,12 @@ module waveform_module;
    end
 endmodule
 """
+
+def get_reset_signal(dut, cd):
+    return getattr(dut, cd + '_rst')
+
+def get_clock_signal(dut, cd):
+    return getattr(dut, cd + '_clk')
 
 def cocotb_parser():
     parser = main_parser()
@@ -50,32 +44,37 @@ def cocotb_parser():
         help="clean generated files after simulation")
     return parser
 
+def generate_verilog(verilog_file, design, platform, name='top', ports=(), vcd_file=None):
+    fragment = Fragment.get(design, platform)
+    print(name, ports)
+    output = verilog.convert(fragment, name=name, ports=ports)
+    with open(verilog_file, 'w') as f:
+        f.write('`timescale 1ns/1ps\n')
+        f.write(output)
+        if vcd_file:
+            vcd_file = os.path.abspath(vcd_file)
+            f.write(verilog_waveforms.format(vcd_file, name))
+
+def run(design, module, platform=None, ports=(), name='top', vcd_file=None):
+    with tempfile.TemporaryDirectory() as d:
+        verilog_file = d + '/nmigen_output.v'
+        generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
+        os.environ['SIM'] = 'icarus'
+        cocotb_run(toplevel=name,
+                   module=module,
+                   verilog_sources=[verilog_file],
+                   compile_args=compile_args_waveforms if vcd_file else [])
+
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
     if args.action == "cocotb":
-        fragment = Fragment.get(design, platform)
-        output = verilog.convert(fragment, name=name, ports=ports)
-        with tempfile.TemporaryDirectory() as d:
-            verilog_file = d + '/nmigen_output.v' 
-            with open(verilog_file, 'w') as f:
-                f.write('`timescale 1ns/1ps\n')
-                f.write(output)
-                if args.vcd_file:
-                    f.write(verilog_waveforms.format(args.vcd_file, name))
-            generate_makefile(verilog_file, name, args.module, args.vcd_file)
-            subprocess.run('make', shell=True)
+        run(design=design,
+            platform=platform,
+            module=args.module,
+            ports=ports,
+            name=name,
+            vcd_file=args.vcd_file)
         if args.clean:
-            os.remove('Makefile')
-            shutil.rmtree('build')
             shutil.rmtree('sim_build')
-            shutil.rmtree('__pycache__')
-
-def generate_makefile(verilog, top, module, waveform=False):
-    makefile = makefile_template.format(verilog, top, module)
-    with open('Makefile', 'w') as f:
-        f.write(makefile)
-        if waveform:
-            f.write(makefile_waveforms)
-        f.write(makefile_includes)
 
 def main(*args, **kwargs):
     parser = cocotb_parser()
