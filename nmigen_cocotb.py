@@ -55,14 +55,14 @@ def generate_verilog(verilog_file, design, platform, name='top', ports=(), vcd_f
             vcd_file = os.path.abspath(vcd_file)
             f.write(verilog_waveforms.format(vcd_file, name))
 
-def run(design, module, platform=None, ports=(), name='top', vcd_file=None):
+def run(design, module, platform=None, ports=(), name='top', vcd_file=None, extra_verilog_files=[]):
     with tempfile.TemporaryDirectory() as d:
         verilog_file = d + '/nmigen_output.v'
         generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
         os.environ['SIM'] = 'icarus'
         cocotb_run(toplevel=name,
                    module=module,
-                   verilog_sources=[verilog_file],
+                   verilog_sources=[verilog_file]+extra_verilog_files,
                    compile_args=compile_args_waveforms if vcd_file else [])
 
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
