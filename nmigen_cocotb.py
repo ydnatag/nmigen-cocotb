@@ -1,5 +1,6 @@
 import argparse
 from cocotb_test.run import run as cocotb_run
+from cocotb_test.simulator import Icarus
 from nmigen import Fragment
 from nmigen.back import verilog
 from nmigen.cli import main_parser, main_runner
@@ -7,6 +8,7 @@ import subprocess
 import tempfile
 import os
 import shutil
+import inspect
 
 
 compile_args_waveforms = ['-s', 'cocotb_waveform_module']
@@ -21,6 +23,10 @@ module cocotb_waveform_module;
    end
 endmodule
 """
+
+def get_current_module():
+    module = inspect.getsourcefile(inspect.stack()[1][0])
+    return inspect.getmodulename(module)
 
 def get_reset_signal(dut, cd):
     return getattr(dut, cd + '_rst')
@@ -60,7 +66,8 @@ def run(design, module, platform=None, ports=(), name='top', vcd_file=None):
         verilog_file = d + '/nmigen_output.v'
         generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
         os.environ['SIM'] = 'icarus'
-        cocotb_run(toplevel=name,
+        cocotb_run(simulator=Icarus,
+                   toplevel=name,
                    module=module,
                    verilog_sources=[verilog_file],
                    compile_args=compile_args_waveforms if vcd_file else [])
