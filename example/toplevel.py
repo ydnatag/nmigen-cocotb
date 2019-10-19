@@ -11,4 +11,4 @@ design.d.comb += b.eq(a)
 design.d.sync += c.eq(a)
 
 if __name__ == '__main__':
-    main(design, ports=ports, name='toplevel', vcd_file='output.v')
+    main(design, ports=ports, name='toplevel')
