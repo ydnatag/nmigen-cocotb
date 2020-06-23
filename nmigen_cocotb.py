@@ -61,19 +61,26 @@ def generate_verilog(verilog_file, design, platform, name='top', ports=(), vcd_f
             vcd_file = os.path.abspath(vcd_file)
             f.write(verilog_waveforms.format(vcd_file, name))
 
-def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, vcd_file=None):
+def copy_rom_files(rom_sources, path):
+    for f in rom_sources:
+        shutil.copy(f, path)
+
+def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, rom_sources=None, vcd_file=None):
     with tempfile.TemporaryDirectory() as d:
         verilog_file = d + '/nmigen_output.v'
+        generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
         sources = [verilog_file]
         if verilog_sources:
             sources.extend(verilog_sources)
-        generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
+        if rom_sources:
+            copy_rom_files(rom_sources, d)
         os.environ['SIM'] = 'icarus'
         cocotb_run(simulator=Icarus,
                    toplevel=name,
                    module=module,
                    verilog_sources=sources,
-                   compile_args=compile_args_waveforms if vcd_file else [])
+                   compile_args=compile_args_waveforms if vcd_file else [],
+                   sim_build=d)
 
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
     if args.action == "cocotb":
