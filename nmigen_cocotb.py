@@ -10,6 +10,18 @@ import os
 import shutil
 import inspect
 
+class Icarus_g2005(Icarus):
+    def compile_command(self):
+
+        cmd_compile = (
+            ["iverilog", "-o", self.sim_file, "-D", "COCOTB_SIM=1", "-s", self.toplevel, "-g2005"]
+            + self.get_define_commands(self.defines)
+            + self.get_include_commands(self.includes)
+            + self.compile_args
+            + self.verilog_sources
+        )
+
+        return cmd_compile
 
 compile_args_waveforms = ['-s', 'cocotb_waveform_module']
 
@@ -75,7 +87,7 @@ def run(design, module, platform=None, ports=(), name='top', verilog_sources=Non
         if extra_files:
             copy_extra_files(extra_files, d)
         os.environ['SIM'] = 'icarus'
-        cocotb_run(simulator=Icarus,
+        cocotb_run(simulator=Icarus_g2005,
                    toplevel=name,
                    module=module,
                    verilog_sources=sources,
