@@ -1,5 +1,4 @@
 import argparse
-from cocotb_test.run import run as cocotb_run
 from cocotb_test.simulator import Icarus
 from nmigen import Fragment
 from nmigen.back import verilog
@@ -87,12 +86,12 @@ def run(design, module, platform=None, ports=(), name='top', verilog_sources=Non
         if extra_files:
             copy_extra_files(extra_files, d)
         os.environ['SIM'] = 'icarus'
-        cocotb_run(simulator=Icarus_g2005,
-                   toplevel=name,
-                   module=module,
-                   verilog_sources=sources,
-                   compile_args=compile_args_waveforms if vcd_file else [],
-                   sim_build=d)
+        simulator = Icarus_g2005(toplevel=name,
+                                 module=module,
+                                 verilog_sources=sources,
+                                 compile_args=compile_args_waveforms if vcd_file else [],
+                                 sim_build=d)
+        simulator.run()
 
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
     if args.action == "cocotb":
