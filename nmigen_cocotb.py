@@ -76,7 +76,7 @@ def copy_extra_files(extra_files, path):
     for f in extra_files:
         shutil.copy(f, path)
 
-def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, extra_files=None, vcd_file=None):
+def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, extra_files=None, vcd_file=None, extra_args=None):
     with tempfile.TemporaryDirectory() as d:
         verilog_file = d + '/nmigen_output.v'
         generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
@@ -85,11 +85,16 @@ def run(design, module, platform=None, ports=(), name='top', verilog_sources=Non
             sources.extend(verilog_sources)
         if extra_files:
             copy_extra_files(extra_files, d)
+        compile_args = []
+        if vcd_file:
+            compile_args += compile_args_waveforms
+        if extra_args:
+            compile_args += extra_args
         os.environ['SIM'] = 'icarus'
         simulator = Icarus_g2005(toplevel=name,
                                  module=module,
                                  verilog_sources=sources,
-                                 compile_args=compile_args_waveforms if vcd_file else [],
+                                 compile_args=compile_args,
                                  sim_build=d)
         simulator.run()
 
