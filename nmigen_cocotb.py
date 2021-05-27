@@ -76,6 +76,21 @@ def copy_extra_files(extra_files, path):
     for f in extra_files:
         shutil.copy(f, path)
 
+def dump_file(filename, content, d):
+    file_path = d + '/' + filename
+    if isinstance(content, bytes):
+        content = content.decode('utf-8')
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            c = f.read()
+        if c != content:
+            raise ValueError("File {!r} already exists"
+                             .format(filename))
+    else:
+        with open(file_path, 'w') as f:
+            f.write(content)
+    return file_path
+
 def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, extra_files=None, vcd_file=None, extra_args=None):
     with tempfile.TemporaryDirectory() as d:
         verilog_file = d + '/nmigen_output.v'
@@ -85,6 +100,11 @@ def run(design, module, platform=None, ports=(), name='top', verilog_sources=Non
             sources.extend(verilog_sources)
         if extra_files:
             copy_extra_files(extra_files, d)
+        if platform:
+            for filename, content in platform.extra_files.items():
+                filepath = dump_file(filename, content, d)
+                if filename.endswith('.v') or filename.endswith('.sv'):
+                    sources.append(filepath)
         compile_args = []
         if vcd_file:
             compile_args += compile_args_waveforms
