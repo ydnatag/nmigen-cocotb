@@ -1,5 +1,5 @@
-from nmigen import *
-from nmigen_cocotb import main
+from amaranth import Module, Signal
+from amaranth_cocotb import main
 
 design = Module()
 a = Signal()

@@ -1,7 +1,7 @@
 # nMigen-cocotb
 
-nMigen-cocotb is a simple python module which tries to combine
-two amazing HDL tools: nMigen and cocotb
+amaranth-cocotb is a simple python module which tries to combine
+two amazing HDL tools: amaranth (former nMigen) and Cocotb.
 
 # Installation
 

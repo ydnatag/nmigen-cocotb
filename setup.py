@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="nmigen_cocotb",
-    version="0.1",
+    name='amaranth-cocotb',
     author='Andres Demski',
-    py_modules=['nmigen_cocotb'],
+    packages=find_packages(),
     setup_requires=['cocotb'],
-    install_requires=['cocotb-test @ git+https://github.com/themperek/cocotb-test.git#egg=cocotb-test',
-                      'nmigen @ git+https://github.com/nmigen/nmigen.git@master#egg=nmigen'],
-    #dependency_links=['git+https://github.com/m-labs/nmigen.git#egg=nmigen',
-                      #'git+https://github.com/themperek/cocotb-test.git#egg=cocotb-test']
+    install_requires=[
+        'cocotb-test',
+        'amaranth @ git+https://github.com/amaranth-lang/amaranth.git#egg=amaranth',
+        'amaranth-yosys'
+    ]
 )
