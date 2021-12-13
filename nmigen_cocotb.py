@@ -1,8 +1,8 @@
 import argparse
 from cocotb_test.simulator import Icarus
-from nmigen import Fragment
-from nmigen.back import verilog
-from nmigen.cli import main_parser, main_runner
+from amaranth import Fragment
+from amaranth.back import verilog
+from amaranth.cli import main_parser, main_runner
 import subprocess
 import tempfile
 import os
