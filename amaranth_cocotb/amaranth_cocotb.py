@@ -1,19 +1,19 @@
-import argparse
 from cocotb_test.simulator import Icarus
-from nmigen import Fragment
-from nmigen.back import verilog
-from nmigen.cli import main_parser, main_runner
-import subprocess
+from amaranth import Fragment
+from amaranth.back import verilog
+from amaranth.cli import main_parser, main_runner
 import tempfile
 import os
 import shutil
 import inspect
 
+
 class Icarus_g2005(Icarus):
     def compile_command(self):
 
         cmd_compile = (
-            ["iverilog", "-o", self.sim_file, "-D", "COCOTB_SIM=1", "-s", self.toplevel, "-g2005"]
+            ["iverilog", "-o", self.sim_file, "-D", "COCOTB_SIM=1", "-s",
+             self.toplevel, "-g2005"]
             + self.get_define_commands(self.defines)
             + self.get_include_commands(self.includes)
             + self.compile_args
@@ -21,6 +21,7 @@ class Icarus_g2005(Icarus):
         )
 
         return cmd_compile
+
 
 compile_args_waveforms = ['-s', 'cocotb_waveform_module']
 
@@ -35,15 +36,19 @@ module cocotb_waveform_module;
 endmodule
 """
 
+
 def get_current_module():
     module = inspect.getsourcefile(inspect.stack()[1][0])
     return inspect.getmodulename(module)
 
+
 def get_reset_signal(dut, cd):
     return getattr(dut, cd + '_rst')
 
+
 def get_clock_signal(dut, cd):
     return getattr(dut, cd + '_clk')
+
 
 def cocotb_parser():
     parser = main_parser()
@@ -61,7 +66,9 @@ def cocotb_parser():
         help="clean generated files after simulation")
     return parser
 
-def generate_verilog(verilog_file, design, platform, name='top', ports=(), vcd_file=None):
+
+def generate_verilog(verilog_file, design, platform, name='top',
+                     ports=(), vcd_file=None):
     fragment = Fragment.get(design, platform)
     print(name, ports)
     output = verilog.convert(fragment, name=name, ports=ports)
@@ -72,9 +79,11 @@ def generate_verilog(verilog_file, design, platform, name='top', ports=(), vcd_f
             vcd_file = os.path.abspath(vcd_file)
             f.write(verilog_waveforms.format(vcd_file, name))
 
+
 def copy_extra_files(extra_files, path):
     for f in extra_files:
         shutil.copy(f, path)
+
 
 def dump_file(filename, content, d):
     file_path = d + '/' + filename
@@ -91,7 +100,10 @@ def dump_file(filename, content, d):
             f.write(content)
     return file_path
 
-def run(design, module, platform=None, ports=(), name='top', verilog_sources=None, extra_files=None, vcd_file=None, extra_args=None):
+
+def run(design, module, platform=None, ports=(), name='top',
+        verilog_sources=None, extra_files=None, vcd_file=None,
+        simulator=Icarus_g2005, extra_args=None, extra_env=None):
     with tempfile.TemporaryDirectory() as d:
         verilog_file = d + '/nmigen_output.v'
         generate_verilog(verilog_file, design, platform, name, ports, vcd_file)
@@ -111,12 +123,14 @@ def run(design, module, platform=None, ports=(), name='top', verilog_sources=Non
         if extra_args:
             compile_args += extra_args
         os.environ['SIM'] = 'icarus'
-        simulator = Icarus_g2005(toplevel=name,
-                                 module=module,
-                                 verilog_sources=sources,
-                                 compile_args=compile_args,
-                                 sim_build=d)
-        simulator.run()
+        sim = simulator(toplevel=name,
+                        module=module,
+                        verilog_sources=sources,
+                        compile_args=compile_args,
+                        sim_build=d,
+                        extra_env=extra_env)
+        sim.run()
+
 
 def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
     if args.action == "cocotb":
@@ -128,6 +142,7 @@ def cocotb_runner(parser, args, design, platform=None, name="top", ports=()):
             vcd_file=args.vcd_file)
         if args.clean:
             shutil.rmtree('sim_build')
+
 
 def main(*args, **kwargs):
     parser = cocotb_parser()
