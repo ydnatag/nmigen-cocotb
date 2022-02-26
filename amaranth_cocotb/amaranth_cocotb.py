@@ -6,21 +6,24 @@ import tempfile
 import os
 import shutil
 import inspect
-
+import re
 
 class Icarus_g2005(Icarus):
     def compile_command(self):
+        def set_verilog_version_to(new_ver, old_cmds):
+            new_cmds = []
+            for each_cmd in old_cmds:
+                version_string_match = re.search("-g20..", each_cmd) # e.g. matches -g2012
+                if version_string_match == None:
+                    new_cmds.append(each_cmd)
+                else:
+                    new_cmds.append(each_cmd.replace(version_string_match.group(0), "-g2005"))
+            return new_cmds
 
-        cmd_compile = (
-            ["iverilog", "-o", self.sim_file, "-D", "COCOTB_SIM=1", "-s",
-             self.toplevel, "-g2005"]
-            + self.get_define_commands(self.defines)
-            + self.get_include_commands(self.includes)
-            + self.compile_args
-            + self.verilog_sources
-        )
-
-        return cmd_compile
+        old_cmds = super().compile_command()
+        new_ver = "-g2005"
+        new_cmds = set_verilog_version_to(new_ver, old_cmds)
+        return new_cmds
 
 
 compile_args_waveforms = ['-s', 'cocotb_waveform_module']
